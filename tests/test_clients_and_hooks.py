@@ -289,7 +289,7 @@ class ClientsAndHooksTest(HubTestCase):
                 self.assertEqual(desktop_hub_token(), TOKEN)
         else:
             with patch.dict(os.environ, clear=True):
-                self.assertIsNone(desktop_hub_token())
+                self.assertEqual(desktop_hub_token(), '')
             with patch.dict(os.environ, {'TEAM_HUB_TOKEN': TOKEN}, clear=True):
                 self.assertEqual(desktop_hub_token(), TOKEN)
 
