@@ -1,0 +1,52 @@
+name: Client Compatibility Issue
+description: Report an integration breakage after a Codex, Claude Code, Antigravity, AGY CLI, or ACP client update.
+title: "[Compat]: "
+labels: ["compatibility"]
+body:
+  - type: dropdown
+    id: client
+    attributes:
+      label: Affected Client
+      options:
+        - Codex Desktop / CLI
+        - Claude Code Desktop
+        - Antigravity App
+        - AGY CLI
+        - AGY ACP (Custom Host)
+    validations:
+      required: true
+  - type: input
+    id: client_version
+    attributes:
+      label: Client Version
+      description: Exact installed client build / CLI version (e.g. codex-cli 0.164.0, Codex Desktop 26.1120.6357.0).
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating System & Shell
+      placeholder: "Windows 11 + PowerShell 7 / macOS 15 / Ubuntu 24.04"
+    validations:
+      required: true
+  - type: dropdown
+    id: team_mode
+    attributes:
+      label: Team Mode
+      options:
+        - Structured Team (workspace hooks)
+        - Peer Team (global access / cross-project)
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed Behavior
+      description: What failed (binding, hook trigger, message delivery, restore after restart, etc.)?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized Diagnostic Output
+      description: Remove TEAM_HUB_TOKEN, route tokens, pairing codes, session IDs, private paths, and raw message/session contents before posting.

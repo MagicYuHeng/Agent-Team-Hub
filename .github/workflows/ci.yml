@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Configure Git identity for isolated worktree tests
+        run: |
+          git config --global user.name "CI Tester"
+          git config --global user.email "ci@example.invalid"
+
+      - name: Run unit tests
+        env:
+          PYTHONUTF8: '1'
+        run: python -m unittest discover -s tests -v
+
+      - name: Check console ES modules syntax (per-file)
+        shell: bash
+        run: |
+          for f in console/console.js console/modules/*.js; do
+            echo "Checking $f"
+            node --check "$f"
+          done
+
+      - name: Verify external CWD module imports and root anchors
+        run: python tests/check_imports.py
+
+      - name: Lint and smoke-test Unix shell scripts (including space-in-path checkout)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in scripts/*.sh; do
+            echo "Checking $f"
+            sh -n "$f"
+          done
+          TMP_BASE="$(mktemp -d)"
+          SPACE_REPO="$TMP_BASE/team hub checkout"
+          cp -a . "$SPACE_REPO"
+          rm -rf "$SPACE_REPO/.team-hub"
+          export TEAM_HUB_TOKEN="ci-linux-smoke-token-0123456789abcdef0123456789"
+          "$SPACE_REPO/scripts/start-hub.sh" --port 59877 --workspace "$SPACE_REPO/fixtures" --database "$SPACE_REPO/.team-hub/smoke.db"
+          # Repeat start on same checkout/port must succeed idempotently
+          "$SPACE_REPO/scripts/start-hub.sh" --port 59877 --workspace "$SPACE_REPO/fixtures" --database "$SPACE_REPO/.team-hub/smoke.db"
+          "$SPACE_REPO/scripts/status-hub.sh" --port 59877 | grep -F "(this checkout)"
+          "$SPACE_REPO/scripts/stop-hub.sh" --port 59877
+          if "$SPACE_REPO/scripts/status-hub.sh" --port 59877; then
+            echo "Expected status-hub.sh to fail after stop" >&2
+            exit 1
+          fi
+          rm -rf "$TMP_BASE"

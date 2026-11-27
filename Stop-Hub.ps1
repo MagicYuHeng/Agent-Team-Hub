@@ -1,19 +1,40 @@
 param(
+    [ValidateRange(1, 65535)]
     [int]$Port = 58767
 )
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$pidFile = Join-Path $root ".team-hub\hub.pid"
+$hubScript = Join-Path $root "hub.py"
+$pidFile = Join-Path $root ".team-hub\hub-$Port.pid"
+$legacyPidFile = Join-Path $root ".team-hub\hub.pid"
+$legacyPid = $null
+if (-not (Test-Path $pidFile) -and $Port -eq 58767 -and (Test-Path $legacyPidFile)) {
+    $pidFile = $legacyPidFile
+    $rawLegacy = (Get-Content -LiteralPath $legacyPidFile -Raw).Trim()
+    if ($rawLegacy -match '^\d+$') { $legacyPid = [int]$rawLegacy }
+}
+
+$conn = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 
 function Test-HubProcess {
     param([int]$ProcessId)
     $info = Get-CimInstance Win32_Process -Filter "ProcessId=$ProcessId" -ErrorAction SilentlyContinue
     if (-not $info) { return $false }
     $cmd = [string]$info.CommandLine
-    if ($cmd -notmatch '(^|\s|["\\/])hub\.py(\s|"|$)') { return $false }
-    if ($cmd -match '--port\s+(\d+)' -and [int]$Matches[1] -ne $Port) { return $false }
-    return $true
+    $cmdPort = 58767
+    if ($cmd -match '(?:^|\s)--port(?:=|\s+)(\d+)(?:\s|$)') {
+        $cmdPort = [int]$Matches[1]
+    }
+    if ($cmdPort -ne $Port) { return $false }
+    if ($cmd.IndexOf($hubScript, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+        return $true
+    }
+    # Legacy upgrade compatibility: allow stopping relative 'hub.py' only when PID matches this checkout's legacy hub.pid AND owns port 58767.
+    if ($null -ne $legacyPid -and $ProcessId -eq $legacyPid -and $conn -and [int]$conn.OwningProcess -eq $ProcessId) {
+        return $cmd -match '(^|\s|["\\/])hub\.py(\s|"|$)'
+    }
+    return $false
 }
 
 $targetPids = New-Object System.Collections.Generic.HashSet[int]
@@ -24,11 +45,10 @@ if (Test-Path $pidFile) {
         if (Test-HubProcess -ProcessId $candidate) {
             [void]$targetPids.Add($candidate)
         } else {
-            Write-Warning "Ignored stale or non-Hub PID $candidate in $pidFile."
+            Write-Warning "Ignored stale or non-matching PID $candidate in $pidFile."
         }
     }
 }
-$conn = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($conn) {
     $owner = [int]$conn.OwningProcess
     if (Test-HubProcess -ProcessId $owner) {
@@ -37,7 +57,7 @@ if ($conn) {
 }
 
 if ($targetPids.Count -eq 0) {
-    Write-Host "No running Team Hub process found on port $Port."
+    Write-Host "No running Team Hub process from this checkout found on port $Port."
     Remove-Item -LiteralPath $pidFile -Force -ErrorAction SilentlyContinue
     exit 0
 }

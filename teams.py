@@ -271,7 +271,6 @@ class Teams:
             'product': row['product'],
             'role': row['role'],
             'role_revision': row['role_revision'],
-            'model': row['model'],
             'worktree': display_worktree(row['worktree']),
             'worktree_raw': row['worktree'],
             'responsibility': row['responsibility'],
@@ -709,13 +708,15 @@ class Teams:
             member = self.new_member(db)
         identity_changed = (
             not old
-            or (old['role'], old['responsibility'], old['model'], old['worktree'])
-            != (role, responsibility, model, worktree)
+            or (old['role'], old['responsibility'], old['worktree'])
+            != (role, responsibility, worktree)
         )
-        any_changed = identity_changed or old['alias'] != alias or old['product'] != product
+        roster_changed = identity_changed or old['alias'] != alias or old['product'] != product
+        any_changed = roster_changed or old['model'] != model
         if any_changed:
             next_role_rev = 1 if not old else (old['role_revision'] + 1 if identity_changed else old['role_revision'])
-            self.bump(db, team_id)
+            if roster_changed:
+                self.bump(db, team_id)
             db.execute('''INSERT INTO roster
                 (team_id,member,role,alias,product,responsibility,seen_revision,role_revision,model,worktree)
                 VALUES (?,?,?,?,?,?,(SELECT revision FROM teams WHERE id=?),?,?,?)

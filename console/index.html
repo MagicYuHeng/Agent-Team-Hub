@@ -6,7 +6,7 @@
   <meta name="referrer" content="no-referrer">
   <title>Team Hub</title>
   <link rel="stylesheet" href="/manage/console.css">
-  <script src="/manage/console.js" defer></script>
+  <script type="module" src="/manage/console.js"></script>
 </head>
 <body>
   <a class="skip" href="#main">跳到主内容</a>
@@ -563,8 +563,8 @@
           <select id="m-role" required></select>
         </div>
         <div class="field">
-          <label for="m-model">实际模型</label>
-          <input id="m-model" maxlength="64" autocomplete="off" placeholder="手动填写（可选）">
+          <label for="m-model">模型备注</label>
+          <input id="m-model" maxlength="64" autocomplete="off" placeholder="仅管理台显示，不注入 Agent（可选）">
         </div>
       </div>
 

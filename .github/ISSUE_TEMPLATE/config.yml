@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security Vulnerability Report
+    url: https://github.com/MagicYuHeng/Agent-Team-Hub/security/advisories/new
+    about: Please report security issues privately via GitHub Security Advisories.

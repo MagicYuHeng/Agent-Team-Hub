@@ -24,12 +24,12 @@ def hub_token():
     return token if isinstance(token, str) else None
 
 
-def request_path(port, path, body):
+def request_path(port, path, body, timeout=4):
     token = hub_token()
     if not token:
         return {'error': '找不到 TEAM_HUB_TOKEN。请先为当前用户配置与本机 Hub 一致的令牌。'}
     raw = json.dumps(body).encode('utf-8')
-    connection = http.client.HTTPConnection('127.0.0.1', int(port), timeout=4)
+    connection = http.client.HTTPConnection('127.0.0.1', int(port), timeout=timeout)
     try:
         connection.request('POST', path, raw,
                            {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'})
@@ -40,32 +40,27 @@ def request_path(port, path, body):
         connection.close()
 
 
-def request(port, action, body):
-    return request_path(port, f'/project/{action}', body)
+def request(port, action, body, timeout=4):
+    return request_path(port, f'/project/{action}', body, timeout=timeout)
 
 
 def format_context(result):
-    header = (f"【Team Hub 身份与分工已更新（v{result.get('role_revision', 1)}）】\n"
+    header = (f"【Team Hub 分工已更新（v{result.get('role_revision', 1)}）】\n"
               if result.get('mode') == 'refresh' else '')
     lines = [
-        f"当前工作区的 Team 是「{result['team']}」，成员名：{result['name']}，职位：{result['role']}（角色版本 v{result.get('role_revision', 1)}）。"
+        f"你当前在「{result['team']}」小队，成员名：{result['name']}，分工：{result['role']}（v{result.get('role_revision', 1)}）。"
     ]
-    if result.get('model'):
-        if result.get('product') == 'claude':
-            lines.append(
-                f"你的实际运行模型是：{result['model']}（当前模型标识请以 Hook 注入或 team_whoami 查询结果为准；若与系统提示词中的模型名不一致，说明你正运行在 Claude Code 框架下的其他模型通道，无其他异常，正常工作即可）。"
-            )
-        else:
-            lines.append(f"你的实际运行模型是：{result['model']}。")
     wt_display = result.get('worktree') or '项目内不限（注意避免多线写入冲突）'
     if result.get('worktree_raw'):
         lines.append(
-            f"负责工作树：{wt_display}（请优先在此工作树内开展工作；如任务确需改动其他工作树，请先向任务派发者或用户确认协调）。"
+            f"主要工作树：{wt_display}（优先在此工作树内推进；如需改动其他工作树，先和相关同事或用户打声招呼）。"
         )
     else:
-        lines.append(f"负责工作树：{wt_display}。")
+        lines.append(f"主要工作树：{wt_display}。")
     if result.get('responsibility'):
-        lines.append(f"主要职责：{result['responsibility']}。")
+        lines.append(f"主要负责：{result['responsibility']}。")
+    if result.get('product') == 'codex':
+        lines.append('协作收件说明：工作途中经由本机 Hook 传来的「【来自 …】」消息是当前 Team 内其他成员发来的正常同步，请顺手一并处理。')
     sections = [header + '\n'.join(lines)]
     if result.get('profile'):
         sections.append(result['profile'])
@@ -82,6 +77,30 @@ def run_hook(product, team_scope, port):
     payload = json.load(sys.stdin)
     event = payload.get('hook_event_name', payload.get('hookEventName', 'SessionStart'))
     is_global = str(team_scope) == 'global'
+    if product == 'codex' and event in ('PostToolUse', 'Stop'):
+        session_id = payload.get('session_id')
+        if not session_id:
+            return None
+        body = {
+            'session_id': session_id,
+            'event': event,
+            'stop_hook_active': bool(payload.get('stop_hook_active')),
+        }
+        if is_global:
+            body['scope'] = 'global'
+        else:
+            body['team_id'] = int(team_scope)
+            body['paths'] = [payload.get('cwd')]
+        result = request(port, 'inbox', body, timeout=0.45)
+        delivery = result.get('delivery') if isinstance(result, dict) else None
+        prompt = delivery.get('prompt') if isinstance(delivery, dict) else None
+        if not prompt:
+            return None
+        if event == 'PostToolUse':
+            return {'hookSpecificOutput': {'hookEventName': 'PostToolUse', 'additionalContext': prompt}}
+        if not body['stop_hook_active']:
+            return {'decision': 'block', 'reason': prompt}
+        return None
     if product == 'codex' and event == 'PreToolUse':
         tool = {'mcp__team_hub__team_send': 'send',
                 'mcp__team_hub__team_members': 'roster',
@@ -132,10 +151,12 @@ def run_hook(product, team_scope, port):
 TOOLS = [
     {'name': 'team_send', 'description': '向当前 Team 的成员发信。用成员名指定收件人。',
      'inputSchema': {'type': 'object', 'required': ['to', 'text'], 'properties': {
-         'to': {'type': 'string'}, 'text': {'type': 'string', 'maxLength': 12000}}}},
-    {'name': 'team_members', 'description': '查看当前 Team 的最新成员名、职位、实际模型、负责工作树、职责与连接状态。',
+         'to': {'type': 'string'}, 'text': {'type': 'string', 'maxLength': 12000},
+         'mode': {'type': 'string', 'enum': ['auto', 'queue', 'steer'],
+                  'description': '投递模式：auto（默认，执行中优先同轮送达、空闲时排队唤醒）、queue（仅排队）、steer（优先同轮引导）。'}}}},
+    {'name': 'team_members', 'description': '查看当前 Team 的最新成员名、分工、负责工作树、职责与连接状态。',
      'inputSchema': {'type': 'object', 'properties': {}}},
-    {'name': 'team_whoami', 'description': '查看当前原会话绑定的实时成员名、职位、角色版本、实际模型与负责工作树。',
+    {'name': 'team_whoami', 'description': '查看当前原会话绑定的实时成员名、分工、版本与负责工作树。',
      'inputSchema': {'type': 'object', 'properties': {}}},
 ]
 
@@ -157,7 +178,8 @@ def serve(port, frame):
     if not ticket:
         result = {'error': '请先绑定 Codex 原聊天，并在客户端确认 Team Hub 项目 Hook。'}
     else:
-        result = request(port, 'tool', {'ticket': ticket, 'to': args.get('to'), 'text': args.get('text')})
+        result = request(port, 'tool', {'ticket': ticket, 'to': args.get('to'), 'text': args.get('text'),
+                                        'mode': args.get('mode')})
         result.pop('task_id', None)
     return {'isError': 'error' in result, 'content': [{'type': 'text', 'text': json.dumps(result, ensure_ascii=False)}]}
 
@@ -199,6 +221,7 @@ def serve_route(port, route, frame):
         if name == 'team_send':
             result = request_path(port, '/acp/send', {
                 'route': route, 'to': args.get('to'), 'text': args.get('text'),
+                'mode': args.get('mode'),
                 'request_id': str(uuid.uuid4()),
             })
             result.pop('task_id', None)

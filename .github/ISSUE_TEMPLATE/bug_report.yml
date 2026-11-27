@@ -1,0 +1,32 @@
+name: Bug Report
+description: Report a bug in Agent Team Hub core service, Console UI, or launch scripts.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Problem Description
+      description: A clear and concise description of what happened vs. what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction Steps
+      description: Exact steps or commands to reproduce the issue.
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Python version, Node.js version (if building plugin), and commit SHA.
+      placeholder: "Windows 11 24H2 / Python 3.11.9 / Node 20.19"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Logs (Sanitized)
+      description: Paste relevant snippets from .team-hub/hub-*.err.log or browser console. Remove TEAM_HUB_TOKEN, route tokens, pairing codes, session IDs, message contents, and private paths first.
