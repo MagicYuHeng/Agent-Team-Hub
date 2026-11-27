@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="arch-title arch-desc">
+  <title id="arch-title">Two Team Modes in Agent Team Hub</title>
+  <desc id="arch-desc">Comparison of Structured Team (single workspace, role hooks, multi-worktree AGENTS.md management) and Peer Team (cross-project flat communication with zero identity injection).</desc>
+
+  <rect width="1200" height="360" rx="20" fill="#171614"/>
+  <rect x="1" y="1" width="1198" height="358" rx="19" fill="none" stroke="#2F2C27" stroke-width="2"/>
+
+  <!-- Left Card: Structured Team -->
+  <g transform="translate(44 36)">
+    <rect x="0" y="0" width="536" height="288" rx="14" fill="#1F1D1A" stroke="#36538A" stroke-width="2"/>
+    <rect x="24" y="24" width="126" height="32" rx="16" fill="#1F2A3D"/>
+    <text x="87" y="45" text-anchor="middle" fill="#9CC0FF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="18" font-weight="600">分工 Team</text>
+    <text x="166" y="46" fill="#9A948A" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">mode: structured</text>
+
+    <text x="24" y="92" fill="#F5F3EE" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="24" font-weight="700">单项目深度协作与规范治理</text>
+
+    <text x="24" y="136" fill="#D4CFC7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="20">• 绑定单一工作区，自动发现全部 Git worktree</text>
+    <text x="24" y="172" fill="#D4CFC7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="20">• 独立成员职位、负责工作树与按版本动态 Hook 注入</text>
+    <text x="24" y="208" fill="#D4CFC7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="20">• 统一编辑 AGENTS.md、漂移对比、跨树查类似与提交</text>
+    <text x="24" y="244" fill="#D4CFC7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="20">• 公共 .git/info/exclude 托管，工作区保持干净</text>
+  </g>
+
+  <!-- Right Card: Peer Team -->
+  <g transform="translate(620 36)">
+    <rect x="0" y="0" width="536" height="288" rx="14" fill="#1F1D1A" stroke="#2D6A4F" stroke-width="2"/>
+    <rect x="24" y="24" width="142" height="32" rx="16" fill="#1C2C25"/>
+    <text x="95" y="45" text-anchor="middle" fill="#7CE0B0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="18" font-weight="600">无分工 Team</text>
+    <text x="182" y="46" fill="#9A948A" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="18">mode: peer</text>
+
+    <text x="24" y="92" fill="#F5F3EE" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="24" font-weight="700">跨独立项目平级联调沟通</text>
+
+    <text x="24" y="136" fill="#D4CFC7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="20">• 不绑定工作区，不改动任何独立项目目录</text>
+    <text x="24" y="172" fill="#D4CFC7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="20">• 零 Hook 团队身份注入，所有会话完全平级</text>
+    <text x="24" y="208" fill="#D4CFC7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="20">• 仅保留点对点收发、可选短备注与离线收件队列</text>
+    <text x="24" y="244" fill="#D4CFC7" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="20">• 一键配置用户级全局 MCP 与 Codex 零注入验票</text>
+  </g>
+</svg>

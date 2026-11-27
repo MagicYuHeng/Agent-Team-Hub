@@ -1,0 +1,6 @@
+Service: inventory
+Environment: integration test
+Expected retention: 14 days
+Observed retention: 21 days
+Expected retry count: 3
+Observed retry count: 3

@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" role="img" aria-labelledby="hero-title hero-desc">
+  <title id="hero-title">Agent Team Hub</title>
+  <desc id="hero-desc">Local-first router and console connecting native sessions across Antigravity App, AGY CLI, AGY ACP, Claude Code Desktop, and Codex Desktop.</desc>
+
+  <rect width="1200" height="340" rx="22" fill="#171614"/>
+  <rect x="1" y="1" width="1198" height="338" rx="21" fill="none" stroke="#2F2C27" stroke-width="2"/>
+
+  <!-- Left: Title & Core Value -->
+  <g id="title-block" transform="translate(56 48)">
+    <rect x="0" y="0" width="248" height="34" rx="17" fill="#23211D" stroke="#3A3630" stroke-width="1.5"/>
+    <circle cx="20" cy="17" r="5" fill="#3FB984"/>
+    <text x="34" y="23" fill="#C9C3B8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16" font-weight="600">LOCAL HUB · APACHE 2.0</text>
+
+    <text x="0" y="96" fill="#F5F3EE" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="54" font-weight="700" letter-spacing="-0.8">Agent Team Hub</text>
+
+    <text x="0" y="142" fill="#C9C3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="22">在本机连接多产品 AI 编程原会话，</text>
+    <text x="0" y="174" fill="#C9C3B8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif" font-size="22">实现本机 Hub 转发协作、动态分工与多工作树规范治理。</text>
+
+    <g transform="translate(0 208)">
+      <rect x="0" y="0" width="166" height="36" rx="8" fill="#1F2A3D" stroke="#36538A" stroke-width="1.5"/>
+      <text x="83" y="24" text-anchor="middle" fill="#9CC0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17" font-weight="600">127.0.0.1:58767</text>
+
+      <rect x="180" y="0" width="144" height="36" rx="8" fill="#1C2C25" stroke="#2D6A4F" stroke-width="1.5"/>
+      <text x="252" y="24" text-anchor="middle" fill="#7CE0B0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="17" font-weight="600">零云端中转</text>
+
+      <rect x="338" y="0" width="154" height="36" rx="8" fill="#2A241B" stroke="#6E522B" stroke-width="1.5"/>
+      <text x="415" y="24" text-anchor="middle" fill="#F0C27F" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="17" font-weight="600">Python 标准库</text>
+    </g>
+  </g>
+
+  <!-- Right: Native Multi-Client Routing Topology -->
+  <g id="routing-diagram" transform="translate(650 38)">
+    <rect x="0" y="0" width="496" height="264" rx="16" fill="#1E1C19" stroke="#332F29" stroke-width="1.5"/>
+
+    <!-- Center Hub Node -->
+    <rect x="26" y="88" width="156" height="88" rx="12" fill="#25221E" stroke="#5C8AE6" stroke-width="2"/>
+    <text x="104" y="124" text-anchor="middle" fill="#F5F3EE" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="21" font-weight="700">Team Hub</text>
+    <text x="104" y="152" text-anchor="middle" fill="#9A948A" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16">SQLite + Queue</text>
+
+    <!-- Connector Paths -->
+    <path d="M182 110 C222 110, 224 44, 260 44" fill="none" stroke="#5C8AE6" stroke-width="2"/>
+    <path d="M182 122 C222 122, 224 90, 260 90" fill="none" stroke="#5C8AE6" stroke-width="2"/>
+    <path d="M182 132 L260 136" fill="none" stroke="#3FB984" stroke-width="2"/>
+    <path d="M182 142 C222 142, 224 182, 260 182" fill="none" stroke="#D99A4E" stroke-width="2"/>
+    <path d="M182 154 C222 154, 224 228, 260 228" fill="none" stroke="#B494E6" stroke-width="2"/>
+
+    <!-- Client Nodes -->
+    <g transform="translate(260 24)">
+      <rect x="0" y="0" width="212" height="36" rx="8" fill="#25221E" stroke="#3C3832" stroke-width="1.5"/>
+      <circle cx="18" cy="18" r="5" fill="#5C8AE6"/>
+      <text x="32" y="24" fill="#EAE6DF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="600">Antigravity App</text>
+    </g>
+    <g transform="translate(260 70)">
+      <rect x="0" y="0" width="212" height="36" rx="8" fill="#25221E" stroke="#3C3832" stroke-width="1.5"/>
+      <circle cx="18" cy="18" r="5" fill="#5C8AE6"/>
+      <text x="32" y="24" fill="#EAE6DF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="600">AGY CLI</text>
+    </g>
+    <g transform="translate(260 116)">
+      <rect x="0" y="0" width="212" height="36" rx="8" fill="#25221E" stroke="#3C3832" stroke-width="1.5"/>
+      <circle cx="18" cy="18" r="5" fill="#3FB984"/>
+      <text x="32" y="24" fill="#EAE6DF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif" font-size="18" font-weight="600">AGY ACP (自定义宿主)</text>
+    </g>
+    <g transform="translate(260 162)">
+      <rect x="0" y="0" width="212" height="36" rx="8" fill="#25221E" stroke="#3C3832" stroke-width="1.5"/>
+      <circle cx="18" cy="18" r="5" fill="#D99A4E"/>
+      <text x="32" y="24" fill="#EAE6DF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="600">Claude Code Desktop</text>
+    </g>
+    <g transform="translate(260 208)">
+      <rect x="0" y="0" width="212" height="36" rx="8" fill="#25221E" stroke="#3C3832" stroke-width="1.5"/>
+      <circle cx="18" cy="18" r="5" fill="#B494E6"/>
+      <text x="32" y="24" fill="#EAE6DF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="600">Codex Desktop</text>
+    </g>
+  </g>
+</svg>

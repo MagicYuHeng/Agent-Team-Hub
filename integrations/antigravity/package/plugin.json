@@ -1,0 +1,6 @@
+{
+  "name": "mcp-aux-relay-plugin",
+  "displayName": "Agent Team Hub Relay",
+  "version": "0.1.0",
+  "description": "Local MCP App and CLI bridge connecting Antigravity App and AGY CLI sessions to Agent Team Hub."
+}

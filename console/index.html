@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Team Hub</title>
+  <link rel="stylesheet" href="/manage/console.css">
+  <script src="/manage/console.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">跳到主内容</a>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-left">
+        <div class="brand">
+          <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>Team Hub</span>
+        </div>
+
+        <div id="team-switcher" class="team-switcher" hidden>
+          <label class="sr-only" for="team-choice">当前团队</label>
+          <select id="team-choice" aria-label="切换团队"></select>
+          <button id="open-create-team" type="button" class="btn-ghost btn-sm">新建</button>
+        </div>
+
+        <div id="header-metrics" class="header-metrics" hidden aria-label="运行状态">
+          <span class="metric-item"><span class="metric-label">在线</span><strong id="stat-online" class="metric-num">0/0</strong></span>
+          <span id="metric-hooks-sep" class="metric-sep" aria-hidden="true">·</span>
+          <span id="metric-hooks-wrap" class="metric-item"><span class="metric-label">Hook</span><strong id="stat-worktrees" class="metric-num">0/0</strong></span>
+          <span class="metric-sep" aria-hidden="true">·</span>
+          <span class="metric-item"><span class="metric-label">队列</span><strong id="stat-queued" class="metric-num">0</strong></span>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <span id="connection" class="conn-pill" data-state="locked">未解锁</span>
+        <button id="theme-toggle" type="button" class="btn-icon-text" aria-label="切换浅色或深色主题" title="切换浅色 / 深色">
+          <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+          </svg>
+          <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"></path>
+          </svg>
+          <span id="theme-label">深色</span>
+        </button>
+        <button id="lock" type="button" class="btn-ghost btn-sm" hidden>锁定</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="external-alert-bar" class="alert-bar" role="status" hidden>
+    <div class="alert-bar-inner" id="external-alert-content"></div>
+  </div>
+
+  <main id="main" class="shell">
+    <section id="unlock" class="unlock-card" aria-labelledby="unlock-title">
+      <h1 id="unlock-title">连接 Team Hub</h1>
+      <p class="subtext">输入本机 <code>TEAM_HUB_TOKEN</code> 解锁管理台。运行 <code>Open-Console.ps1</code> 可自动携带令牌打开。</p>
+      <form id="auth" class="stack">
+        <div class="field">
+          <label for="token">令牌</label>
+          <div class="inline-row">
+            <input id="token" type="password" required autocomplete="off" spellcheck="false"
+                   placeholder="粘贴 TEAM_HUB_TOKEN" aria-describedby="auth-error">
+            <button type="submit" class="btn-primary">连接</button>
+          </div>
+          <p id="auth-error" class="field-error" role="alert"></p>
+        </div>
+      </form>
+    </section>
+
+    <div id="dashboard" hidden>
+      <section id="empty-state" class="empty-card empty-onboard" hidden>
+        <h1>开始使用 Team Hub</h1>
+        <p class="subtext">在本机连接 Antigravity、AGY CLI、AGY ACP、Claude Code 与 Codex 原会话协同工作。选择一种团队模式创建你的第一个 Team：</p>
+        <div class="onboard-grid">
+          <div class="onboard-option">
+            <div class="onboard-head">
+              <strong>分工 Team</strong>
+              <span class="tag-soft">单工作区</span>
+            </div>
+            <p class="muted-label">绑定单一项目工作区，支持独立职位分工、动态 Hook 身份注入、多工作树同步与 AGENTS.md 规范治理。</p>
+            <button id="empty-create-structured" type="button" class="btn-primary btn-sm">创建分工 Team</button>
+          </div>
+          <div class="onboard-option">
+            <div class="onboard-head">
+              <strong>无分工 Team</strong>
+              <span class="tag-soft tag-shared">跨项目平级</span>
+            </div>
+            <p class="muted-label">不绑定工作区、不注入团队身份，适合多个独立项目的会话直接平级联调沟通。</p>
+            <button id="empty-create-peer" type="button" class="btn-ghost btn-sm">创建无分工 Team</button>
+          </div>
+        </div>
+        <p class="onboard-steps muted-label">流程：1. 创建 Team → 2. 部署工作区 Hook（或配置跨项目全局接入）→ 3. 新增成员并绑定原会话。提示：Codex 首次部署 Hook 后需在客户端设置中手动审批信任一次。</p>
+      </section>
+
+      <div id="workspace-shell" hidden>
+        <div class="tab-strip">
+          <nav class="tabs" id="main-tabs" role="tablist" aria-label="管理台视图">
+            <button id="tab-members" type="button" role="tab" aria-selected="true" aria-controls="panel-members" data-tab="members">
+              成员 <span id="badge-members" class="tab-num">0</span>
+            </button>
+            <button id="tab-docs" type="button" role="tab" aria-selected="false" aria-controls="panel-docs" data-tab="docs">
+              规范与角色 <span id="badge-doc-alerts" class="tab-dot" hidden>0</span>
+            </button>
+            <button id="tab-workspace" type="button" role="tab" aria-selected="false" aria-controls="panel-workspace" data-tab="workspace">
+              工作区 <span id="badge-worktrees" class="tab-num">0</span>
+            </button>
+            <button id="tab-messages" type="button" role="tab" aria-selected="false" aria-controls="panel-messages" data-tab="messages">
+              消息 <span id="badge-queued" class="tab-dot" hidden>0</span>
+            </button>
+            <span id="main-tab-indicator" class="tab-indicator" aria-hidden="true"></span>
+          </nav>
+          <p id="active-team-path" class="workspace-crumb mono-path"></p>
+        </div>
+
+        <!-- Tab 1: Members & Roles -->
+        <section id="panel-members" class="tab-panel" role="tabpanel" aria-labelledby="tab-members">
+          <div class="section-bar">
+            <div class="title-with-badge">
+              <h2 id="active-team-name">成员与分工</h2>
+              <span id="active-team-mode-badge" class="tag-soft" hidden></span>
+            </div>
+            <button id="open-new-member" type="button" class="btn-primary btn-sm">新增成员</button>
+          </div>
+          <div id="members-empty" class="empty-inline" hidden>
+            <p>暂无成员</p>
+            <button id="empty-new-member" type="button" class="btn-primary btn-sm">新增成员</button>
+          </div>
+          <ul id="members-list" class="flat-list" aria-label="成员列表"></ul>
+
+          <div id="peer-settings-panel" class="peer-settings" hidden>
+            <div class="surface-block">
+              <div class="block-head">
+                <h2>跨项目全局接入</h2>
+                <div class="btn-group">
+                  <button id="install-global-access" type="button" class="btn-primary btn-sm">配置全局接入</button>
+                  <button id="remove-global-access" type="button" class="btn-ghost btn-sm" hidden>移除全局接入</button>
+                </div>
+              </div>
+              <div id="global-access-bar" class="hook-bar"></div>
+              <div class="block-body peer-access-note">
+                <p class="muted-label">写入用户级 Claude / Codex MCP 与 Codex 仅验票钩子（不注入团队身份，不改动各独立项目目录）。Codex 首次在客户端信任一次用户级钩子后即可全项目收发。</p>
+                <p id="global-access-error" class="field-error" role="alert"></p>
+              </div>
+            </div>
+
+            <div class="danger-strip">
+              <div>
+                <strong>移除此 Team</strong>
+                <span class="muted-label">归档后已绑定会话将自动解绑</span>
+              </div>
+              <button id="peer-archive-team" type="button" class="btn-danger-ghost btn-sm">移除 Team</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab 2: 3-Column Docs Studio -->
+        <section id="panel-docs" class="tab-panel tab-panel-studio" role="tabpanel" aria-labelledby="tab-docs" hidden>
+          <div class="studio-mobile-bar">
+            <button id="mobile-toggle-rail" type="button" class="btn-ghost btn-sm" aria-expanded="false">目录</button>
+            <button id="mobile-jump-insp" type="button" class="btn-ghost btn-sm">历史 / 查类似 / 批量加</button>
+          </div>
+          <div class="docs-studio" id="docs-studio">
+            <!-- Left Rail: Grouped Tree + Role Docs -->
+            <aside class="studio-rail" id="studio-rail" aria-label="规范与工作树目录">
+              <div class="rail-section">
+                <div class="rail-heading">AGENTS.md</div>
+                <ul id="agents-tree-list" class="tree-list"></ul>
+              </div>
+              <div class="rail-divider" aria-hidden="true"></div>
+              <div class="rail-section">
+                <div class="rail-heading">规则与角色</div>
+                <ul id="role-doc-list" class="tree-list"></ul>
+              </div>
+            </aside>
+
+            <!-- Center Stage: Single Hero Editor -->
+            <div class="studio-editor">
+              <div class="editor-head">
+                <div class="editor-title-group">
+                  <h2 id="doc-editor-title"></h2>
+                  <span id="doc-editor-sub" class="editor-sub"></span>
+                </div>
+                <div class="editor-actions">
+                  <div id="selection-actions" class="sel-float" hidden>
+                    <button id="sel-find-similar" type="button" class="btn-tint btn-sm">查类似</button>
+                    <button id="sel-batch-append" type="button" class="btn-ghost btn-sm">批量加</button>
+                  </div>
+                  <button id="doc-reload-btn" type="button" class="btn-ghost btn-sm">刷新</button>
+                  <button id="doc-reset-btn" type="button" class="btn-ghost btn-sm" hidden>恢复默认</button>
+                  <button id="doc-save-btn" type="button" class="btn-primary btn-sm">保存</button>
+                </div>
+              </div>
+
+              <div id="doc-external-banner" class="inline-notice" hidden>
+                <span id="doc-external-text">磁盘有外部改动</span>
+                <div class="btn-group">
+                  <button id="doc-toggle-ext-diff" type="button" class="btn-ghost btn-sm">查看对比</button>
+                  <button id="doc-accept-external-btn" type="button" class="btn-ghost btn-sm">采纳磁盘版</button>
+                </div>
+              </div>
+
+              <div id="doc-drift-banner" class="inline-notice" hidden>
+                <span id="doc-drift-text">共享规范与基准有漂移</span>
+                <div class="btn-group">
+                  <button id="doc-toggle-drift-diff" type="button" class="btn-ghost btn-sm">查看漂移对比</button>
+                </div>
+              </div>
+
+              <div id="doc-diff-view" class="diff-viewer" hidden>
+                <div class="diff-bar">
+                  <div class="diff-bar-left">
+                    <strong id="diff-view-title">变动对比</strong>
+                    <span id="diff-view-stats" class="diff-stats"></span>
+                  </div>
+                  <div class="btn-group">
+                    <div class="mini-seg" role="group" aria-label="差异显示范围">
+                      <button type="button" class="mini-seg-btn active" data-diff-scope="changes">仅看变动</button>
+                      <button type="button" class="mini-seg-btn" data-diff-scope="full">全文对比</button>
+                    </div>
+                    <button id="doc-close-diff" type="button" class="btn-ghost btn-sm">返回编辑</button>
+                  </div>
+                </div>
+                <div id="doc-diff-body" class="diff-body" role="region" aria-label="行内变动对比"></div>
+              </div>
+
+              <textarea id="doc-textarea" class="studio-textarea" spellcheck="false"
+                        aria-label="文档正文"></textarea>
+
+              <div class="editor-foot">
+                <input id="doc-note" class="foot-note" maxlength="120" placeholder="修改备注（可选）">
+                <label id="doc-single-commit-wrap" class="check-inline" hidden>
+                  <input id="doc-single-commit" type="checkbox">
+                  <span>提交 AGENTS.md</span>
+                </label>
+                <span id="doc-path-hint" class="foot-path mono-path"></span>
+              </div>
+              <p id="doc-error" class="field-error editor-error" role="alert"></p>
+            </div>
+
+            <!-- Right Inspector: History / Similar / Append / Sync -->
+            <aside class="studio-inspector" aria-label="上下文操作面板">
+              <div class="seg-bar" id="inspector-tabs" role="tablist" aria-label="右侧面板视图">
+                <button type="button" role="tab" class="seg-btn" data-insp="history" aria-selected="true">历史</button>
+                <button type="button" role="tab" class="seg-btn" data-insp="similar" aria-selected="false">查类似</button>
+                <button type="button" role="tab" class="seg-btn" data-insp="append" aria-selected="false">批量加</button>
+                <button type="button" role="tab" class="seg-btn" data-insp="sync" aria-selected="false">同步</button>
+                <span id="inspector-indicator" class="seg-indicator" aria-hidden="true"></span>
+              </div>
+
+              <!-- Inspector Pane 1: History -->
+              <div id="insp-history" class="insp-pane" role="tabpanel">
+                <div class="insp-subhead">
+                  <span id="doc-rev-count" class="muted-label">0 条记录</span>
+                </div>
+                <ul id="doc-revisions" class="insp-list"></ul>
+              </div>
+
+              <!-- Inspector Pane 2: Similar Search & Remove -->
+              <div id="insp-similar" class="insp-pane" role="tabpanel" hidden>
+                <div class="insp-controls">
+                  <div class="inline-row">
+                    <input id="similar-query-input" maxlength="400" autocomplete="off"
+                           placeholder="划选左侧句子或直接输入检索">
+                    <button id="similar-run-btn" type="button" class="btn-primary btn-sm">查</button>
+                  </div>
+                  <div class="insp-toolbar">
+                    <div class="mini-seg" id="sim-threshold-seg" role="group" aria-label="匹配严格度">
+                      <button type="button" class="mini-seg-btn" data-sim-threshold="0.75">严格</button>
+                      <button type="button" class="mini-seg-btn active" data-sim-threshold="0.55">标准</button>
+                      <button type="button" class="mini-seg-btn" data-sim-threshold="0.38">宽松</button>
+                    </div>
+                    <div class="link-group">
+                      <button id="similar-select-rec" type="button" class="btn-link">高置信</button>
+                      <button id="similar-select-all" type="button" class="btn-link">全选</button>
+                      <button id="similar-select-none" type="button" class="btn-link">清空</button>
+                    </div>
+                  </div>
+                  <p id="similar-summary" class="muted-label"></p>
+                </div>
+
+                <ul id="similar-results-list" class="insp-list"></ul>
+
+                <div class="insp-footer">
+                  <div class="insp-toolbar">
+                    <div class="mini-seg" id="sim-action-seg" role="group" aria-label="批量操作方式">
+                      <button type="button" class="mini-seg-btn active" data-sim-action="remove">移除</button>
+                      <button type="button" class="mini-seg-btn" data-sim-action="replace">替换</button>
+                    </div>
+                    <button id="similar-swap-btn" type="button" class="btn-link" hidden title="互换检索旧文与替换新文">⇄ 互换新旧</button>
+                  </div>
+                  <textarea id="similar-replace-input" class="compact-textarea" rows="2" spellcheck="false"
+                            placeholder="输入替换为的新正文" hidden></textarea>
+                  <div id="similar-commit-box" class="insp-commit-box" hidden>
+                    <div class="insp-commit-head">
+                      <span class="muted-label">逐树提交 AGENTS.md</span>
+                      <div class="link-group">
+                        <button id="similar-commit-all" type="button" class="btn-link">全选</button>
+                        <button id="similar-commit-none" type="button" class="btn-link">不提交</button>
+                      </div>
+                    </div>
+                    <div id="similar-commit-checks" class="commit-checks"></div>
+                  </div>
+                  <div class="inline-row">
+                    <input id="similar-remove-note" maxlength="120" placeholder="操作备注（可选）">
+                    <button id="similar-remove-btn" type="button" class="btn-danger btn-sm" disabled>移除</button>
+                  </div>
+                  <p id="similar-error" class="field-error" role="alert"></p>
+                </div>
+              </div>
+
+              <!-- Inspector Pane 3: Batch Append -->
+              <div id="insp-append" class="insp-pane" role="tabpanel" hidden>
+                <div class="insp-controls">
+                  <textarea id="append-text-input" class="compact-textarea" rows="3" spellcheck="false"
+                            placeholder="输入要批量添加的约束或段落"></textarea>
+                  <div class="inline-row">
+                    <select id="append-position" aria-label="插入位置">
+                      <option value="before_shared">独立区末尾</option>
+                      <option value="section">指定 ## 小节</option>
+                      <option value="end">文件末尾</option>
+                    </select>
+                    <select id="append-section-select" aria-label="目标小节" hidden></select>
+                  </div>
+                  <div class="insp-toolbar">
+                    <div class="link-group">
+                      <button id="append-scope-shared" type="button" class="btn-link">共享组</button>
+                      <button id="append-scope-all" type="button" class="btn-link">全部</button>
+                    </div>
+                    <button id="append-preview-btn" type="button" class="btn-ghost btn-sm">去重预览</button>
+                  </div>
+                </div>
+
+                <div id="append-wt-matrix" class="insp-list"></div>
+
+                <div class="insp-footer">
+                  <div class="inline-row">
+                    <input id="append-note" maxlength="120" placeholder="添加备注（可选）">
+                    <button id="append-apply-btn" type="button" class="btn-primary btn-sm">批量添加</button>
+                  </div>
+                  <p id="append-error" class="field-error" role="alert"></p>
+                </div>
+              </div>
+
+              <!-- Inspector Pane 4: Sync & Drift -->
+              <div id="insp-sync" class="insp-pane" role="tabpanel" hidden>
+                <div class="insp-controls">
+                  <p id="sync-summary" class="muted-label"></p>
+                  <div class="insp-toolbar">
+                    <div class="link-group">
+                      <button id="sync-write-all" type="button" class="btn-link">全选写入</button>
+                      <button id="sync-commit-all" type="button" class="btn-link">全选提交</button>
+                      <button id="sync-commit-none" type="button" class="btn-link">清空提交</button>
+                    </div>
+                    <button id="sync-jump-shared" type="button" class="btn-link" hidden>去改共享规范 →</button>
+                  </div>
+                </div>
+
+                <div id="sync-wt-matrix" class="insp-list"></div>
+
+                <div id="sync-footer" class="insp-footer" hidden>
+                  <p id="sync-error" class="field-error" role="alert"></p>
+                  <span class="muted-label">勾选后点击左侧「同步保存」执行</span>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- Tab 3: Workspace & Worktrees -->
+        <section id="panel-workspace" class="tab-panel" role="tabpanel" aria-labelledby="tab-workspace" hidden>
+          <div class="surface-block">
+            <div class="block-head">
+              <h2>工作区与 Hook</h2>
+              <div class="btn-group">
+                <button id="refresh-worktrees" type="button" class="btn-ghost btn-sm">刷新</button>
+                <button id="install-hooks" type="button" class="btn-primary btn-sm">部署 Hook</button>
+                <button id="sync-hooks" type="button" class="btn-primary btn-sm" hidden>同步全部</button>
+                <button id="remove-hooks" type="button" class="btn-ghost btn-sm" hidden>撤销 Hook</button>
+              </div>
+            </div>
+
+            <form id="workspace-path-form" class="block-body">
+              <div class="inline-row">
+                <label class="sr-only" for="workspace-input">总工作区绝对路径</label>
+                <input id="workspace-input" required maxlength="1000" autocomplete="off" spellcheck="false"
+                       placeholder="总工作区绝对路径" aria-describedby="workspace-error">
+                <button type="submit" class="btn-ghost btn-sm">保存路径</button>
+              </div>
+              <p id="workspace-error" class="field-error" role="alert"></p>
+            </form>
+
+            <div class="hook-bar" id="hook-observed-bar"></div>
+            <ul id="worktree-list" class="flat-list flat-list-inset" aria-label="存活工作树"></ul>
+          </div>
+
+          <div class="two-col">
+            <div class="surface-block">
+              <div class="block-head">
+                <h2>Git 提交身份</h2>
+                <div class="btn-group">
+                  <button id="detect-gh-identity" type="button" class="btn-ghost btn-sm">读 gh</button>
+                  <button id="detect-git-identity" type="button" class="btn-ghost btn-sm">读 git</button>
+                </div>
+              </div>
+              <form id="git-identity-form" class="block-body stack-sm">
+                <div class="field">
+                  <label for="git-author-name">作者名</label>
+                  <input id="git-author-name" maxlength="80" autocomplete="off">
+                </div>
+                <div class="field">
+                  <label for="git-author-email">作者邮箱</label>
+                  <input id="git-author-email" maxlength="160" autocomplete="off" placeholder="id+user@users.noreply.github.com">
+                </div>
+                <div id="git-identity-saved" class="saved-identity-bar">
+                  <span id="git-identity-current" class="muted-label">当前未配置 Git 提交身份</span>
+                  <button id="clear-git-identity" type="button" class="btn-danger-ghost btn-sm" hidden>移除</button>
+                </div>
+                <p id="git-identity-error" class="field-error" role="alert"></p>
+                <div class="form-actions">
+                  <button id="save-git-identity-btn" type="submit" class="btn-ghost btn-sm">保存身份</button>
+                </div>
+              </form>
+            </div>
+
+            <div class="surface-block">
+              <div class="block-head">
+                <h2>新成员默认分工</h2>
+              </div>
+              <form id="defaults-form" class="block-body stack-sm">
+                <div class="field">
+                  <label for="role-antigravity">Antigravity</label>
+                  <select id="role-antigravity"></select>
+                </div>
+                <div class="field">
+                  <label for="role-claude">Claude Code</label>
+                  <select id="role-claude"></select>
+                </div>
+                <div class="field">
+                  <label for="role-codex">Codex</label>
+                  <select id="role-codex"></select>
+                </div>
+                <div class="field">
+                  <label for="role-agy_acp">AGY ACP</label>
+                  <select id="role-agy_acp"></select>
+                </div>
+                <div class="field">
+                  <label for="role-agy_cli">AGY CLI</label>
+                  <select id="role-agy_cli"></select>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn-ghost btn-sm">保存默认</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div class="danger-strip">
+            <div>
+              <strong>移除此 Team</strong>
+              <span class="muted-label">归档配置前需先撤销项目 Hook</span>
+            </div>
+            <button id="archive-team" type="button" class="btn-danger-ghost btn-sm">移除 Team</button>
+          </div>
+        </section>
+
+        <!-- Tab 4: Messages & Queue -->
+        <section id="panel-messages" class="tab-panel" role="tabpanel" aria-labelledby="tab-messages" hidden>
+          <div class="section-bar">
+            <div class="mini-seg" role="group" aria-label="按消息状态筛选">
+              <button type="button" class="mini-seg-btn active" data-filter="all">全部</button>
+              <button type="button" class="mini-seg-btn" data-filter="pending">待送达</button>
+              <button type="button" class="mini-seg-btn" data-filter="accepted">已送达</button>
+              <button type="button" class="mini-seg-btn" data-filter="issue">异常/取消</button>
+            </div>
+            <div class="btn-group">
+              <label class="sr-only" for="filter-member">按成员筛选</label>
+              <select id="filter-member" class="compact-select" aria-label="按成员筛选">
+                <option value="">全部成员</option>
+              </select>
+              <button id="open-send-msg" type="button" class="btn-primary btn-sm">发消息</button>
+            </div>
+          </div>
+          <div id="messages-empty" class="empty-inline" hidden>暂无消息</div>
+          <div id="messages-list" class="message-list"></div>
+
+          <details id="legacy-section" class="surface-block legacy-card" hidden>
+            <summary class="block-head summary-head">
+              <h2>历史旧任务 <span id="legacy-count" class="tab-num">0</span></h2>
+              <span class="muted-label">展开</span>
+            </summary>
+            <div id="legacy-list" class="message-list block-body"></div>
+          </details>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Create Team Dialog -->
+  <dialog id="create-team-dialog" aria-labelledby="create-team-title">
+    <div class="dialog-head">
+      <h2 id="create-team-title">新建 Team</h2>
+      <button type="button" class="btn-icon" data-close-dialog="create-team-dialog" aria-label="关闭">&times;</button>
+    </div>
+    <form id="create-team-form" class="stack">
+      <div class="field">
+        <label>类型</label>
+        <div class="mini-seg mode-seg" id="new-team-mode-seg" role="group" aria-label="Team 类型">
+          <button type="button" class="mini-seg-btn active" data-team-mode="structured">分工 Team</button>
+          <button type="button" class="mini-seg-btn" data-team-mode="peer">无分工 Team</button>
+        </div>
+        <p id="new-team-mode-hint" class="muted-label">绑定单一工作区，支持角色分工、Hook 注入与规范文档管理。</p>
+      </div>
+      <div class="field">
+        <label for="new-team-name">名称 <span class="req">*</span></label>
+        <input id="new-team-name" required maxlength="60" autocomplete="off" placeholder="my-project-team">
+      </div>
+      <div id="new-team-workspace-field" class="field">
+        <label for="new-team-workspace">总工作区路径 <span class="req">*</span></label>
+        <input id="new-team-workspace" required maxlength="1000" autocomplete="off" spellcheck="false"
+               placeholder="C:\Projects\my-app">
+      </div>
+      <p id="create-team-error" class="field-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn-ghost btn-sm" data-close-dialog="create-team-dialog">取消</button>
+        <button type="submit" class="btn-primary btn-sm">创建</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Add / Edit Member Dialog -->
+  <dialog id="member-dialog" aria-labelledby="member-dialog-title">
+    <div class="dialog-head">
+      <h2 id="member-dialog-title">新增成员</h2>
+      <button type="button" class="btn-icon" data-close-dialog="member-dialog" aria-label="关闭">&times;</button>
+    </div>
+    <form id="member-form" class="stack">
+      <div class="two-col">
+        <div class="field">
+          <label for="m-name">成员名 <span class="req">*</span></label>
+          <input id="m-name" required maxlength="48" autocomplete="off" placeholder="Captain / next-worker">
+        </div>
+        <div class="field">
+          <label for="m-product">产品 <span class="req">*</span></label>
+          <select id="m-product" required>
+            <option value="">请选择</option>
+            <option value="antigravity">Antigravity</option>
+            <option value="claude">Claude Code</option>
+            <option value="codex">Codex</option>
+            <option value="agy_acp">AGY ACP</option>
+            <option value="agy_cli">AGY CLI</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="m-role-model-row" class="two-col">
+        <div class="field">
+          <label for="m-role">职位 <span class="req">*</span></label>
+          <select id="m-role" required></select>
+        </div>
+        <div class="field">
+          <label for="m-model">实际模型</label>
+          <input id="m-model" maxlength="64" autocomplete="off" placeholder="手动填写（可选）">
+        </div>
+      </div>
+
+      <div id="m-worktree-field" class="field">
+        <label for="m-worktree">负责工作树</label>
+        <select id="m-worktree"></select>
+      </div>
+
+      <div class="field">
+        <label id="m-responsibility-label" for="m-responsibility">职责 <span class="req">*</span></label>
+        <input id="m-responsibility" required maxlength="160" autocomplete="off"
+               placeholder="简述负责模块或范围">
+      </div>
+
+      <p id="member-form-error" class="field-error" role="alert"></p>
+
+      <div class="dialog-footer">
+        <button id="delete-member-btn" type="button" class="btn-danger-ghost btn-sm" hidden>移出</button>
+        <div class="dialog-actions">
+          <button type="button" class="btn-ghost btn-sm" data-close-dialog="member-dialog">取消</button>
+          <button id="save-member-btn" type="submit" class="btn-primary btn-sm">保存</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Bind Native Session Dialog -->
+  <dialog id="binding-dialog" aria-labelledby="binding-title">
+    <div class="dialog-head">
+      <h2 id="binding-title">绑定原会话</h2>
+      <button type="button" class="btn-icon" data-close-dialog="binding-dialog" aria-label="关闭">&times;</button>
+    </div>
+    <div class="stack">
+      <ol id="binding-steps" class="step-list"></ol>
+      <p id="binding-workspace-note" class="mono-box"></p>
+
+      <form id="binding-form" class="stack">
+        <div id="binding-codex" class="field" hidden>
+          <label for="codex-thread">Codex Session ID <span class="req">*</span></label>
+          <input id="codex-thread" minlength="36" maxlength="36" autocomplete="off" spellcheck="false"
+                 placeholder="36 位 UUID">
+        </div>
+        <div id="binding-antigravity" class="field" hidden>
+          <label for="window-label">备注（可选）</label>
+          <input id="window-label" maxlength="80" autocomplete="off" placeholder="默认使用成员名">
+        </div>
+        <p id="binding-error" class="field-error" role="alert"></p>
+        <div class="dialog-actions">
+          <button type="button" class="btn-ghost btn-sm" data-close-dialog="binding-dialog">关闭</button>
+          <button id="save-binding" type="submit" class="btn-primary btn-sm">生成绑定码</button>
+        </div>
+      </form>
+
+      <div id="binding-output" class="copy-box" hidden>
+        <div class="copy-head">
+          <span>在目标原聊天执行</span>
+          <button id="copy-binding-btn" type="button" class="btn-ghost btn-sm">复制</button>
+        </div>
+        <pre id="binding-command"></pre>
+        <p id="binding-live-state" class="live-hint" role="status"></p>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Operator Send Test Message Dialog -->
+  <dialog id="send-msg-dialog" aria-labelledby="send-msg-title">
+    <div class="dialog-head">
+      <h2 id="send-msg-title">发送测试消息</h2>
+      <button type="button" class="btn-icon" data-close-dialog="send-msg-dialog" aria-label="关闭">&times;</button>
+    </div>
+    <form id="send-msg-form" class="stack">
+      <div class="field">
+        <label for="send-msg-to">收件成员 <span class="req">*</span></label>
+        <select id="send-msg-to" required></select>
+      </div>
+      <div class="field">
+        <label for="send-msg-body">内容 <span class="req">*</span></label>
+        <textarea id="send-msg-body" class="compact-textarea" rows="5" required maxlength="12000"
+                  placeholder="输入投递正文"></textarea>
+      </div>
+      <p id="send-msg-error" class="field-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn-ghost btn-sm" data-close-dialog="send-msg-dialog">取消</button>
+        <button type="submit" class="btn-primary btn-sm">发送</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- .ai Read-only Archive Preview Dialog -->
+  <dialog id="ai-preview-dialog" class="dialog-wide" aria-labelledby="ai-preview-title">
+    <div class="dialog-head">
+      <h2 id="ai-preview-title">.ai 存档（只读）</h2>
+      <button type="button" class="btn-icon" data-close-dialog="ai-preview-dialog" aria-label="关闭">&times;</button>
+    </div>
+    <div class="stack">
+      <div class="mini-seg" role="tablist" aria-label=".ai 预览视图">
+        <button id="ai-tab-current" type="button" class="mini-seg-btn active" data-ai-tab="current">CURRENT</button>
+        <button id="ai-tab-logs" type="button" class="mini-seg-btn" data-ai-tab="logs">交接日志</button>
+      </div>
+      <div id="ai-pane-current" class="stack">
+        <div id="ai-current-meta" class="meta-line"></div>
+        <pre id="ai-current-content" class="preview-pre"></pre>
+      </div>
+      <div id="ai-pane-logs" class="stack" hidden>
+        <ul id="ai-log-list" class="flat-list flat-list-inset"></ul>
+        <pre id="ai-log-content" class="preview-pre" hidden></pre>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Revision Preview Dialog -->
+  <dialog id="rev-preview-dialog" class="dialog-wide" aria-labelledby="rev-preview-title">
+    <div class="dialog-head">
+      <h2 id="rev-preview-title">历史版本</h2>
+      <button type="button" class="btn-icon" data-close-dialog="rev-preview-dialog" aria-label="关闭">&times;</button>
+    </div>
+    <div class="stack">
+      <p id="rev-preview-meta" class="muted-label"></p>
+      <pre id="rev-preview-content" class="preview-pre"></pre>
+      <div class="dialog-actions">
+        <button type="button" class="btn-ghost btn-sm" data-close-dialog="rev-preview-dialog">关闭</button>
+        <button id="rev-rollback-confirm" type="button" class="btn-primary btn-sm">回档此版本</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
