@@ -478,10 +478,11 @@ class ClientsAndHooksTest(HubTestCase):
         rev_after = {t['id']: t['revision'] for t in self.api('/control')['teams']}[team_id]
         self.assertEqual(rev_before, rev_after)
 
-        # Plan A: wait-inbox blocks until message arrives, prints prompt, acks received, and exits 0
+        # Plan A: wait-inbox defaults to persistent silent wait (no 5-minute idle exit), wakes on real message,
+        # tolerates brief Hub restarts, and exits cleanly when Hub remains down past disconnect_grace.
         env = os.environ | {'TEAM_HUB_TOKEN': TOKEN}
         waiter = subprocess.Popen(
-            [sys.executable, str(repo_root / 'project_agent.py'), 'wait-inbox', str(port), cli_route, '15'],
+            [sys.executable, str(repo_root / 'project_agent.py'), 'wait-inbox', str(port), cli_route],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8', env=env,
         )
         try:
@@ -493,6 +494,33 @@ class ClientsAndHooksTest(HubTestCase):
         finally:
             if waiter.poll() is None:
                 waiter.kill()
+                waiter.wait()
+
+        # Verify transient Hub disconnect recovers silently without waking agent, and sustained outage exits 1.
+        import project_agent
+        transient_seq = iter([
+            {'error': project_agent.TRANSIENT_HUB_ERROR},
+            {'error': project_agent.TRANSIENT_HUB_ERROR},
+            {'bound': True, 'delivery': None},
+            {'bound': True, 'delivery': {'id': 'm-transient', 'revision': 1, 'prompt': '【来自 App-主控】\nRECOVERED-OK'}},
+            {'accepted': True},
+        ])
+        with patch.object(project_agent, 'request_path', side_effect=lambda *a, **kw: next(transient_seq)):
+            self.assertEqual(
+                project_agent.wait_inbox(port, cli_route, timeout=0, disconnect_grace=5.0, poll_interval=0.05),
+                0,
+            )
+        with patch.object(project_agent, 'request_path', return_value={'error': project_agent.TRANSIENT_HUB_ERROR}):
+            self.assertEqual(
+                project_agent.wait_inbox(port, cli_route, timeout=0, disconnect_grace=0.08, poll_interval=0.05),
+                1,
+            )
+        # Verify explicit positive timeout still exits 0 when idle window elapses.
+        with patch.object(project_agent, 'request_path', return_value={'bound': True, 'delivery': None}):
+            self.assertEqual(
+                project_agent.wait_inbox(port, cli_route, timeout=1, disconnect_grace=5.0, poll_interval=0.05),
+                0,
+            )
         self.assertIsNone(self.api('/agy-cli/poll', {'route': cli_route})['delivery'])
 
         # Plan C fallback: Hook PreInvocation delivers pending message & role context even without wait-inbox

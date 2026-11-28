@@ -198,7 +198,7 @@ def handle_agy_cli_request(handler):
                 raise ValueError('session_id 格式不正确。')
             result = store.teams.bind_agy_cli(code, session_id=session_id, label=body.get('label'))
             result['wait_command'] = agy_cli_wait_command(port, result['route'])
-            result['instruction'] = '请立即在后台运行 wait_command 启动收件监听；后续每次收到队友消息被唤醒并处理回复后，请重新在后台运行同一条 wait_command。'
+            result['instruction'] = '请立即在后台运行 wait_command 启动静默收件监听（不要设置 NotificationTimeoutSeconds 等周期提醒超时）；监听会持续待机，仅在收到队友消息或绑定失效时退出并唤醒，处理回复后重新挂起同一条 wait_command。'
             handler.respond(200, result)
             return
         if action == 'restore':
@@ -209,7 +209,7 @@ def handle_agy_cli_request(handler):
             result = store.teams.restore_agy_cli(session_id)
             if result.get('bound') and result.get('route'):
                 result['wait_command'] = agy_cli_wait_command(port, result['route'])
-                result['instruction'] = '已自动恢复绑定。请立即在后台运行 wait_command 恢复自动收件监听；后续每次收到队友消息被唤醒并处理回复后，请重新在后台运行同一条 wait_command。'
+                result['instruction'] = '已自动恢复绑定。请立即在后台运行 wait_command 恢复静默收件监听（不要设置 NotificationTimeoutSeconds 等周期提醒超时）；仅在收到队友消息或绑定失效时退出并唤醒，处理回复后重新挂起同一条 wait_command。'
             handler.respond(200, result)
             return
         if action == 'poll':

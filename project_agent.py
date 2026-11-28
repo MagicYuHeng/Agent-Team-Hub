@@ -249,30 +249,59 @@ def route_mcp(port, route=None):
         print(json.dumps(reply, ensure_ascii=False), flush=True)
 
 
-def wait_inbox(port, route, timeout=300):
-    deadline = time.monotonic() + max(5, int(timeout))
-    while True:
-        res = request_path(port, '/agy-cli/poll', {'route': route})
-        if res.get('error'):
-            print(f"[Team Hub 监听中断] {res['error']}", flush=True)
-            return 1
-        if not res.get('bound'):
-            print('[Team Hub 监听结束] 当前 AGY CLI 会话绑定已失效，请重新绑定。', flush=True)
-            return 1
-        delivery = res.get('delivery')
-        if delivery and delivery.get('prompt'):
-            request_path(port, '/agy-cli/received', {
-                'route': route,
-                'id': delivery['id'],
-                'revision': delivery['revision'],
-            })
-            print(delivery['prompt'], flush=True)
-            print('\n[Team Hub] 收到队友消息；处理并回复后，请重新在后台运行同一条 wait-inbox 命令以继续收件。', flush=True)
-            return 0
-        if time.monotonic() >= deadline:
-            print('[Team Hub] 后台监听已到续期窗口（当前无新消息），请重新在后台运行 wait-inbox 命令以保持在线收件。', flush=True)
-            return 0
-        time.sleep(1.5)
+TRANSIENT_HUB_ERROR = '暂时连不上本机 Team Hub。'
+
+
+def wait_inbox(port, route, timeout=0, disconnect_grace=60.0, poll_interval=1.5):
+    """Block silently until a teammate message arrives, binding ends, or Hub stays unreachable past grace."""
+    timeout_val = int(timeout)
+    deadline = (time.monotonic() + max(1, timeout_val)) if timeout_val > 0 else None
+    disconnect_since = None
+    backoff = max(0.05, float(poll_interval))
+    try:
+        while True:
+            res = request_path(port, '/agy-cli/poll', {'route': route})
+            err = res.get('error')
+            if err:
+                if err != TRANSIENT_HUB_ERROR:
+                    print(f'[Team Hub 监听中断] {err}', flush=True)
+                    return 1
+                now = time.monotonic()
+                if disconnect_since is None:
+                    disconnect_since = now
+                if now - disconnect_since >= max(0.0, float(disconnect_grace)):
+                    print(f'[Team Hub 监听中断] {err}', flush=True)
+                    return 1
+                if deadline is not None and now >= deadline:
+                    print(f'[Team Hub 监听中断] {err}', flush=True)
+                    return 1
+                sleep_sec = backoff
+                if deadline is not None:
+                    sleep_sec = min(sleep_sec, max(0.05, deadline - now))
+                time.sleep(sleep_sec)
+                backoff = min(8.0, backoff * 2.0)
+                continue
+            disconnect_since = None
+            backoff = max(0.05, float(poll_interval))
+            if not res.get('bound'):
+                print('[Team Hub 监听结束] 当前 AGY CLI 会话绑定已失效，请重新绑定。', flush=True)
+                return 1
+            delivery = res.get('delivery')
+            if delivery and delivery.get('prompt'):
+                request_path(port, '/agy-cli/received', {
+                    'route': route,
+                    'id': delivery['id'],
+                    'revision': delivery['revision'],
+                })
+                print(delivery['prompt'], flush=True)
+                print('\n[Team Hub] 收到队友消息；处理并回复后，请重新在后台运行同一条 wait-inbox 命令以继续静默收件（不要设置周期提醒超时）。', flush=True)
+                return 0
+            if deadline is not None and time.monotonic() >= deadline:
+                print('[Team Hub] 后台监听已达到指定等待时长（当前无新消息）。', flush=True)
+                return 0
+            time.sleep(max(0.05, float(poll_interval)))
+    except KeyboardInterrupt:
+        return 0
 
 
 if __name__ == '__main__':
@@ -287,7 +316,7 @@ if __name__ == '__main__':
         route_arg = sys.argv[3] if len(sys.argv) > 3 else None
         route_mcp(int(sys.argv[2]), route_arg)
     elif sys.argv[1] == 'wait-inbox':
-        timeout_sec = int(sys.argv[4]) if len(sys.argv) > 4 else 300
+        timeout_sec = int(sys.argv[4]) if len(sys.argv) > 4 else 0
         sys.exit(wait_inbox(int(sys.argv[2]), sys.argv[3], timeout=timeout_sec))
     else:
         mcp(int(sys.argv[2]))
